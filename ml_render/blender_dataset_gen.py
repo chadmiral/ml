@@ -3,8 +3,8 @@ import random
 import os
 import math
 
-data_count = 10
-renderSize = 256
+data_count = 100
+renderSize = 128
 rotRange = (-360.0, 360.0)
 
 scene = bpy.context.scene
@@ -31,13 +31,58 @@ def add_camera():
     bpy.context.collection.objects.link(camera_obj)
     bpy.context.scene.camera = camera_obj
     
+def gen_pbr_material(diffuse_rgb, metalness, roughness):
+    mat = bpy.data.materials.new(name="randMat")
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+
+    #set some random PBR params
+    for i in range(3):
+        bsdf.inputs[0].default_value[i] = diffuse_rgb[i]
+
+    bsdf.inputs[4].default_value = metalness
+    bsdf.inputs[7].default_value = roughness
+
+    return mat
+
 def add_background():
     box_width = 1.5
+    
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( 0.0,  0.0, -box_width), rotation=(0.0, 0.0, 0.0))
+    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
+    metallic = random.uniform(0.0, 1.0)
+    roughness = random.uniform(0.0, 1.0)
+    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    bpy.context.selected_objects[0].data.materials.append(m)
+
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( box_width,  0.0,  0.0), rotation=(0.0,  math.pi / 2.0, 0.0))
+    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
+    metallic = random.uniform(0.0, 1.0)
+    roughness = random.uniform(0.0, 1.0)
+    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    bpy.context.selected_objects[0].data.materials.append(m)
+    
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=(-box_width,  0.0,  0.0), rotation=(0.0, -math.pi / 2.0, 0.0))
+    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
+    metallic = random.uniform(0.0, 1.0)
+    roughness = random.uniform(0.0, 1.0)
+    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    bpy.context.selected_objects[0].data.materials.append(m)
+
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( 0.0, -box_width,  0.0), rotation=( math.pi / 2.0, 0.0, 0.0))
+    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
+    metallic = random.uniform(0.0, 1.0)
+    roughness = random.uniform(0.0, 1.0)
+    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    bpy.context.selected_objects[0].data.materials.append(m)
+
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( 0.0,  box_width,  0.0), rotation=(-math.pi / 2.0, 0.0, 0.0))
+    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
+    metallic = random.uniform(0.0, 1.0)
+    roughness = random.uniform(0.0, 1.0)
+    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    bpy.context.selected_objects[0].data.materials.append(m)
+
 
 def add_random_renderable():
     pos = (random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0))
@@ -45,23 +90,14 @@ def add_random_renderable():
     scale = random.uniform(0.0, 1.0)
     diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
     metallic = random.uniform(0.0, 1.0)
+    roughness = random.uniform(0.0, 1.0)
     
     sphere = bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4, radius=scale, enter_editmode=False, location=pos, rotation=rot)
     
     #create and add material
-    sphereMat = bpy.data.materials.new(name="sphereMat")
-    sphereMat.use_nodes=True
-    bsdf = sphereMat.node_tree.nodes.get("Principled BSDF")
-    
-    #set some random PBR parameters
-    bsdf.inputs[0].default_value[0] = diffuse_rgb[0]
-    bsdf.inputs[0].default_value[1] = diffuse_rgb[1]
-    bsdf.inputs[0].default_value[2] = diffuse_rgb[2]
-    
-    bsdf.inputs[4].default_value = metallic
+    sphereMat = gen_pbr_material(diffuse_rgb, metallic, roughness)
     
     bpy.context.selected_objects[0].data.materials.append(sphereMat)
-    
 
     params.append(pos)
     params.append(rot)
