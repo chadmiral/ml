@@ -2,17 +2,21 @@ import bpy
 import random
 import os
 import math
+import numpy as np
+import csv
 
-data_count = 100
+data_count = 10000
 renderSize = 128
 rotRange = (-360.0, 360.0)
 
 scene = bpy.context.scene
+fields = []
 params = []
 
 def reset_params():
     print("reset params")
-    params = []
+    params.clear()
+    fields.clear()
     
 
 def reset_scene():
@@ -31,7 +35,11 @@ def add_camera():
     bpy.context.collection.objects.link(camera_obj)
     bpy.context.scene.camera = camera_obj
     
-def gen_pbr_material(diffuse_rgb, metalness, roughness):
+def gen_pbr_material(name="none"):
+    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
+    metalness=random.uniform(0.0, 1.0)
+    roughness=random.uniform(0.0, 1.0)
+
     mat = bpy.data.materials.new(name="randMat")
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes.get("Principled BSDF")
@@ -43,44 +51,39 @@ def gen_pbr_material(diffuse_rgb, metalness, roughness):
     bsdf.inputs[4].default_value = metalness
     bsdf.inputs[7].default_value = roughness
 
+    params.append(list(diffuse_rgb))
+    params.append(metalness)
+    params.append(roughness)
+
+    fields.append(name + "_diffuse_r")
+    fields.append(name + "_diffuse_g")
+    fields.append(name + "_diffuse_b")
+    fields.append(name + "_metalness")
+    fields.append(name + "_roughness")
+
     return mat
 
 def add_background():
     box_width = 1.5
     
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( 0.0,  0.0, -box_width), rotation=(0.0, 0.0, 0.0))
-    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
-    metallic = random.uniform(0.0, 1.0)
-    roughness = random.uniform(0.0, 1.0)
-    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    m = gen_pbr_material("back_plane")
     bpy.context.selected_objects[0].data.materials.append(m)
 
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( box_width,  0.0,  0.0), rotation=(0.0,  math.pi / 2.0, 0.0))
-    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
-    metallic = random.uniform(0.0, 1.0)
-    roughness = random.uniform(0.0, 1.0)
-    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    m = gen_pbr_material("right_plane")
     bpy.context.selected_objects[0].data.materials.append(m)
     
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=(-box_width,  0.0,  0.0), rotation=(0.0, -math.pi / 2.0, 0.0))
-    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
-    metallic = random.uniform(0.0, 1.0)
-    roughness = random.uniform(0.0, 1.0)
-    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    m = gen_pbr_material("left_plane")
     bpy.context.selected_objects[0].data.materials.append(m)
 
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( 0.0, -box_width,  0.0), rotation=( math.pi / 2.0, 0.0, 0.0))
-    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
-    metallic = random.uniform(0.0, 1.0)
-    roughness = random.uniform(0.0, 1.0)
-    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    m = gen_pbr_material("bottom_plane")
     bpy.context.selected_objects[0].data.materials.append(m)
 
     bpy.ops.mesh.primitive_plane_add(size=10.0, enter_editmode=False, location=( 0.0,  box_width,  0.0), rotation=(-math.pi / 2.0, 0.0, 0.0))
-    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
-    metallic = random.uniform(0.0, 1.0)
-    roughness = random.uniform(0.0, 1.0)
-    m = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    m = gen_pbr_material("top_plane")
     bpy.context.selected_objects[0].data.materials.append(m)
 
 
@@ -88,22 +91,25 @@ def add_random_renderable():
     pos = (random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0))
     rot = (random.uniform(rotRange[0], rotRange[1]), random.uniform(rotRange[0], rotRange[1]), random.uniform(rotRange[0], rotRange[1]))
     scale = random.uniform(0.0, 1.0)
-    diffuse_rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
-    metallic = random.uniform(0.0, 1.0)
-    roughness = random.uniform(0.0, 1.0)
     
     sphere = bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=4, radius=scale, enter_editmode=False, location=pos, rotation=rot)
     
     #create and add material
-    sphereMat = gen_pbr_material(diffuse_rgb, metallic, roughness)
+    sphereMat = gen_pbr_material("sphere")
     
     bpy.context.selected_objects[0].data.materials.append(sphereMat)
 
-    params.append(pos)
-    params.append(rot)
+    params.append(list(pos))
+    params.append(list(rot))
     params.append(scale)
-    params.append(diffuse_rgb)
-    params.append(metallic)
+
+    fields.append("sphere_pos_x")
+    fields.append("sphere_pos_y")
+    fields.append("sphere_pos_z")
+    fields.append("sphere_rot_x")
+    fields.append("sphere_rot_y")
+    fields.append("sphere_rot_z")
+    fields.append("sphere_scale")
     
 def add_random_light():
     pos = (random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0))
@@ -119,9 +125,17 @@ def add_random_light():
     bpy.context.collection.objects.link(light_obj)
     light_obj.location = pos
     
-    params.append(pos)
-    params.append(rgb)
+    params.append(list(pos))
+    params.append(list(rgb))
     params.append(light_data.energy)
+
+    fields.append("light_pos_x")
+    fields.append("light_pos_y")
+    fields.append("light_pos_z")
+    fields.append("light_r")
+    fields.append("light_g")
+    fields.append("light_b")
+    fields.append("light_energy")
     
 
 def render_scene(idx):
@@ -144,8 +158,21 @@ def render_scene(idx):
     scene.cycles.samples = 64
     scene.cycles.max_bounces=16
     scene.cycles.use_denoising=True
+
+def flatten_list(_2d_list):
+    flat_list = []
+    # Iterate through the outer list
+    for element in _2d_list:
+        if type(element) is list:
+            # If the element is of type list, iterate through the sublist
+            for item in element:
+                flat_list.append(item)
+        else:
+            flat_list.append(element)
+    return flat_list
     
 
+out_params = []
 for i in range(data_count):
     reset_params()
     reset_scene()
@@ -157,4 +184,11 @@ for i in range(data_count):
 
     render_scene(i)
 
-    print(params)
+    out_params.append(flatten_list(params))
+
+print('param vector size: %d' % len(fields))
+
+with open('data/labels.csv', 'w') as f:
+    write = csv.writer(f)
+    write.writerow(fields)
+    write.writerows(out_params)
