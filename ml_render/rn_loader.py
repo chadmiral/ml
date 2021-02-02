@@ -26,7 +26,7 @@ class RenderNetDataset(Dataset):
         #print(img_name)
         #print(image.shape)
 
-        scene_vec = self.scene_matrix.loc[idx].to_numpy()
+        scene_vec = self.scene_matrix.loc[idx].to_numpy(dtype='float32')
         
         if self.transform:
             #print(image)
