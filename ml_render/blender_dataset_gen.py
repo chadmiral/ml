@@ -5,9 +5,10 @@ import math
 import numpy as np
 import csv
 
-data_count = 10000
+data_count = 12800
 renderSize = 128
-rotRange = (-360.0, 360.0)
+rotRange = (0.0, 360.0)
+max_light_energy = 100.0
 
 scene = bpy.context.scene
 fields = []
@@ -99,8 +100,11 @@ def add_random_renderable():
     
     bpy.context.selected_objects[0].data.materials.append(sphereMat)
 
-    params.append(list(pos))
-    params.append(list(rot))
+    remap_pos = 0.5 * (np.array(pos) + np.array([1.0, 1.0, 1.0]))
+    remap_rot = np.array(rot) / 360.0
+
+    params.append(list(remap_pos))
+    params.append(list(remap_rot))
     params.append(scale)
 
     fields.append("sphere_pos_x")
@@ -114,7 +118,7 @@ def add_random_renderable():
 def add_random_light():
     pos = (random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0), random.uniform(-1.0, 1.0))
     light_data = bpy.data.lights.new(name="light", type='POINT')
-    light_data.energy = random.uniform(0.0, 100)
+    light_data.energy = random.uniform(0.0, max_light_energy)
     rgb = (random.uniform(0.0, 1.0), random.uniform(0.0, 1.0), random.uniform(0.0, 1.0))
     
     light_data.color.r = rgb[0]
@@ -124,10 +128,13 @@ def add_random_light():
     light_obj = bpy.data.objects.new(name="light", object_data = light_data)
     bpy.context.collection.objects.link(light_obj)
     light_obj.location = pos
+
+    remap_pos = 0.5 * (np.array(pos) + np.array([1.0, 1.0, 1.0]))
+    remap_energy = light_data.energy / max_light_energy
     
-    params.append(list(pos))
+    params.append(list(remap_pos))
     params.append(list(rgb))
-    params.append(light_data.energy)
+    params.append(remap_energy)
 
     fields.append("light_pos_x")
     fields.append("light_pos_y")
@@ -150,7 +157,7 @@ def render_scene(idx):
     render.image_settings.color_mode='RGBA'
     render.image_settings.file_format='PNG'
     render.image_settings.compression=90
-    render.filepath = os.path.join("/home/chandra/ml/ml_render/data/", ('render%05d.png' % i))
+    render.filepath = os.path.join("/home/chandra/ml/ml_render/data/judkins_box", ('render%05d.png' % i))
     
     bpy.ops.render.render(animation=False, write_still=True)
     
